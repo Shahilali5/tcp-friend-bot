@@ -1,11 +1,11 @@
 Flask
-requests
-gunicorn
-pycryptodome
 Flask[async]
+requests
 aiohttp
-googleapis-common-protos
+gunicorn
+Werkzeug
 pycryptodome
 protobuf
-Werkzeug
-telebot
+googleapis-common-protos
+pyTelegramBotAPI
+pyjwt
