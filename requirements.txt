@@ -8,3 +8,4 @@ googleapis-common-protos
 pycryptodome
 protobuf
 Werkzeug
+telebot
