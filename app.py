@@ -14,7 +14,7 @@ import jwt
 app = Flask(__name__)
 bot = telebot.TeleBot("7819546201:AAFygncq5TTfcWyBXtJN3g1-HBRyXZHkfe8")
 bot.remove_webhook()
-bot.set_webhook(url="https://tcp-friend-bot.vercel.app//webhook")
+bot.set_webhook(url="https://tcp-friend-bot.vercel.app/webhook")
 
 CURRENT_VERSION = "OB50"
 UNITY_VERSION = "2020.3.18f1"
