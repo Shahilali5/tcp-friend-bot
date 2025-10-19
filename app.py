@@ -20,6 +20,8 @@ CURRENT_VERSION = "OB50"
 UNITY_VERSION = "2020.3.18f1"
 BOT_UID = "4226589058"
 BOT_PASSWORD = "164AE2612E87F3F68BC8A9972BD5ED448C0F9F57ECD73855E2EEDDBF5E1579F9"
+BOT2_UID = "4233922129"
+BOT2_PASSWORD = "39F01DC850ADD6B68BBC3E7D85237AEADBCD2EE754398EA62821F79F7836DEC9"
 
 def encrypt_message(plaintext):
     try:
@@ -329,15 +331,73 @@ def handle_add_command(message):
     except Exception as e:
         bot.reply_to(message, f"❌ *Error:* {str(e)}", parse_mode='Markdown')
 
+@bot.message_handler(commands=['add2'])
+def handle_add2_command(message):
+    try:
+        uid = message.text.split()[1]
+        region = "IND"
+        token = generate_token(BOT2_UID, BOT2_PASSWORD)
+        if not token:
+            bot.reply_to(message, "❌ Failed to generate token for Bot 2")
+            return
+        
+        jwt_data = decode_jwt(token)
+        bot_name = jwt_data.get("nickname", "Unknown") if jwt_data else "Unknown"
+        
+        player_data = get_player_info_api(uid, region)
+        if player_data:
+            basic_info = player_data.get("data", {}).get("basicInfo", {})
+            player_name = basic_info.get("nickname", "Unknown")
+            player_uid = basic_info.get("accountId", 0)
+            player_level = basic_info.get("level", 0)
+        else:
+            encrypted_uid = enc(uid)
+            if not encrypted_uid:
+                bot.reply_to(message, "❌ UID encryption failed")
+                return
+            info = make_request(encrypted_uid, region, token)
+            if not info:
+                bot.reply_to(message, "❌ Failed to retrieve player info")
+                return
+            jsone = MessageToJson(info)
+            data_info = json.loads(jsone)
+            player_name = str(data_info.get('AccountInfo', {}).get('PlayerNickname', 'Unknown'))
+            player_uid = int(data_info.get('AccountInfo', {}).get('UID', 0))
+            player_level = int(data_info.get('AccountInfo', {}).get('Level', 0))
+        
+        results = {"success": 0, "failed": 0}
+        send_friend_request(uid, token, region, results)
+        
+        response_text = "🎯 *FRIEND REQUEST SENT* 🎯\n\n"
+        response_text += "🤖 *Bot Account (Account 2):*\n"
+        response_text += f"   └─ 🔖 {bot_name}\n\n"
+        response_text += "👤 *Target Player:*\n"
+        response_text += f"   ├─ 🆔 UID: `{player_uid}`\n"
+        response_text += f"   ├─ 🏷️ Name: {player_name}\n"
+        response_text += f"   └─ ⭐ Level: {player_level}\n\n"
+        response_text += "📊 *Request Results:*\n"
+        response_text += f"   ├─ ✅ Successful: {results['success']}\n"
+        response_text += f"   └─ ❌ Failed: {results['failed']}\n\n"
+        response_text += "💫 *Please accept the friend request from the bot account*"
+        
+        bot.reply_to(message, response_text, parse_mode='Markdown')
+        
+    except IndexError:
+        bot.reply_to(message, "📝 *Usage:* `/add2 <uid>`\nExample: `/add2 1234567890`", parse_mode='Markdown')
+    except Exception as e:
+        bot.reply_to(message, f"❌ *Error:* {str(e)}", parse_mode='Markdown')
+
 @bot.message_handler(commands=['help', 'start'])
 def handle_help_command(message):
     help_text = "🤖 *FREE FIRE FRIEND REQUEST BOT* 🤖\n\n"
     help_text += "📋 *Available Commands:*\n"
-    help_text += "   └─ `/add <uid>` - Send friend requests to a player\n"
+    help_text += "   ├─ `/add <uid>` - Send friend request using Bot 1\n"
+    help_text += "   ├─ `/add2 <uid>` - Send friend request using Bot 2\n"
+    help_text += "   ├─ `/stats <uid>` - Get player statistics\n"
     help_text += "   └─ `/help` - Show this help message\n\n"
     help_text += "⚡ *Features:*\n"
-    help_text += "   └─ Single account request sending\n"
-    help_text += "   └─ Player information lookup\n"
+    help_text += "   ├─ Multiple bot accounts\n"
+    help_text += "   ├─ Player information lookup\n"
     help_text += "   └─ Automatic bot account management\n\n"
     help_text += "🎮 *Version:* OB50"
     bot.reply_to(message, help_text, parse_mode='Markdown')
