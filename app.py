@@ -12,16 +12,21 @@ import telebot
 import jwt
 
 app = Flask(__name__)
+
+BOTS = {
+    "1": {"uid": "4226589058", "password": "164AE2612E87F3F68BC8A9972BD5ED448C0F9F57ECD73855E2EEDDBF5E1579F9"},
+    "2": {"uid": "4233922129", "password": "39F01DC850ADD6B68BBC3E7D85237AEADBCD2EE754398EA62821F79F7836DEC9"},
+    "3": {"uid": "4240000000", "password": "39F01DC850ADD6B68BBC3E7D85237AEADBCD2EE754398EA62821F79F7836DEC9"},
+    "4": {"uid": "4240000001", "password": "39F01DC850ADD6B68BBC3E7D85237AEADBCD2EE754398EA62821F79F7836DEC9"},
+    "5": {"uid": "4240000002", "password": "39F01DC850ADD6B68BBC3E7D85237AEADBCD2EE754398EA62821F79F7836DEC9"}
+}
+
 bot = telebot.TeleBot("7819546201:AAFygncq5TTfcWyBXtJN3g1-HBRyXZHkfe8")
 bot.remove_webhook()
 bot.set_webhook(url="https://tcp-friend-bot.onrender.com/webhook")
 
 CURRENT_VERSION = "OB50"
 UNITY_VERSION = "2020.3.18f1"
-BOT_UID = "4226589058"
-BOT_PASSWORD = "164AE2612E87F3F68BC8A9972BD5ED448C0F9F57ECD73855E2EEDDBF5E1579F9"
-BOT2_UID = "4233922129"
-BOT2_PASSWORD = "39F01DC850ADD6B68BBC3E7D85237AEADBCD2EE754398EA62821F79F7836DEC9"
 
 def encrypt_message(plaintext):
     try:
@@ -149,7 +154,7 @@ def send_requests():
     region = request.args.get("region", "").upper()
     if not uid or not region:
         return jsonify({"error": "uid and region are required"}), 400
-    token = generate_token(BOT_UID, BOT_PASSWORD)
+    token = generate_token(BOTS["1"]["uid"], BOTS["1"]["password"])
     if not token:
         return jsonify({"error": "Failed to generate token"}), 500
     try:
@@ -219,7 +224,7 @@ def get_player_info():
             }
             return jsonify(response)
         else:
-            token = generate_token(BOT_UID, BOT_PASSWORD)
+            token = generate_token(BOTS["1"]["uid"], BOTS["1"]["password"])
             if not token:
                 return jsonify({"error": "Failed to generate token"}), 500
             encrypted_uid = enc(uid)
@@ -275,132 +280,89 @@ def webhook():
     else:
         return 'Invalid content type', 403
 
-@bot.message_handler(commands=['add'])
-def handle_add_command(message):
-    try:
-        uid = message.text.split()[1]
-        region = "IND"
-        token = generate_token(BOT_UID, BOT_PASSWORD)
-        if not token:
-            bot.reply_to(message, "❌ Failed to generate token")
-            return
-        
-        jwt_data = decode_jwt(token)
-        bot_name = jwt_data.get("nickname", "Unknown") if jwt_data else "Unknown"
-        
-        player_data = get_player_info_api(uid, region)
-        if player_data:
-            basic_info = player_data.get("data", {}).get("basicInfo", {})
-            player_name = basic_info.get("nickname", "Unknown")
-            player_uid = basic_info.get("accountId", 0)
-            player_level = basic_info.get("level", 0)
-        else:
-            encrypted_uid = enc(uid)
-            if not encrypted_uid:
-                bot.reply_to(message, "❌ UID encryption failed")
+def handle_add_command_generator(bot_number):
+    def handler(message):
+        try:
+            uid = message.text.split()[1]
+            region = "IND"
+            
+            if bot_number not in BOTS:
+                bot.reply_to(message, f"❌ Bot {bot_number} not found")
                 return
-            info = make_request(encrypted_uid, region, token)
-            if not info:
-                bot.reply_to(message, "❌ Failed to retrieve player info")
+                
+            bot_config = BOTS[bot_number]
+            token = generate_token(bot_config["uid"], bot_config["password"])
+            if not token:
+                bot.reply_to(message, f"❌ Failed to generate token for Bot {bot_number}")
                 return
-            jsone = MessageToJson(info)
-            data_info = json.loads(jsone)
-            player_name = str(data_info.get('AccountInfo', {}).get('PlayerNickname', 'Unknown'))
-            player_uid = int(data_info.get('AccountInfo', {}).get('UID', 0))
-            player_level = int(data_info.get('AccountInfo', {}).get('Level', 0))
-        
-        results = {"success": 0, "failed": 0}
-        send_friend_request(uid, token, region, results)
-        
-        response_text = "🎯 *FRIEND REQUEST SENT* 🎯\n\n"
-        response_text += "🤖 *Bot Account:*\n"
-        response_text += f"   └─ 🔖 {bot_name}\n\n"
-        response_text += "👤 *Target Player:*\n"
-        response_text += f"   ├─ 🆔 UID: `{player_uid}`\n"
-        response_text += f"   ├─ 🏷️ Name: {player_name}\n"
-        response_text += f"   └─ ⭐ Level: {player_level}\n\n"
-        response_text += "📊 *Request Results:*\n"
-        response_text += f"   ├─ ✅ Successful: {results['success']}\n"
-        response_text += f"   └─ ❌ Failed: {results['failed']}\n\n"
-        response_text += "💫 *Please accept the friend request from the bot account*"
-        
-        bot.reply_to(message, response_text, parse_mode='Markdown')
-        
-    except IndexError:
-        bot.reply_to(message, "📝 *Usage:* `/add <uid>`\nExample: `/add 1234567890`", parse_mode='Markdown')
-    except Exception as e:
-        bot.reply_to(message, f"❌ *Error:* {str(e)}", parse_mode='Markdown')
+            
+            jwt_data = decode_jwt(token)
+            bot_name = jwt_data.get("nickname", "Unknown") if jwt_data else "Unknown"
+            
+            player_data = get_player_info_api(uid, region)
+            if player_data:
+                basic_info = player_data.get("data", {}).get("basicInfo", {})
+                player_name = basic_info.get("nickname", "Unknown")
+                player_uid = basic_info.get("accountId", 0)
+                player_level = basic_info.get("level", 0)
+            else:
+                encrypted_uid = enc(uid)
+                if not encrypted_uid:
+                    bot.reply_to(message, "❌ UID encryption failed")
+                    return
+                info = make_request(encrypted_uid, region, token)
+                if not info:
+                    bot.reply_to(message, "❌ Failed to retrieve player info")
+                    return
+                jsone = MessageToJson(info)
+                data_info = json.loads(jsone)
+                player_name = str(data_info.get('AccountInfo', {}).get('PlayerNickname', 'Unknown'))
+                player_uid = int(data_info.get('AccountInfo', {}).get('UID', 0))
+                player_level = int(data_info.get('AccountInfo', {}).get('Level', 0))
+            
+            results = {"success": 0, "failed": 0}
+            send_friend_request(uid, token, region, results)
+            
+            response_text = f"🎯 FRIEND REQUEST SENT 🎯\n\n"
+            response_text += f"🤖 Bot Account (Account {bot_number}):\n"
+            response_text += f"   └─ 🔖 {bot_name}\n\n"
+            response_text += "👤 Target Player:\n"
+            response_text += f"   ├─ 🆔 UID: {player_uid}\n"
+            response_text += f"   ├─ 🏷️ Name: {player_name}\n"
+            response_text += f"   └─ ⭐ Level: {player_level}\n\n"
+            response_text += "📊 Request Results:\n"
+            response_text += f"   ├─ ✅ Successful: {results['success']}\n"
+            response_text += f"   └─ ❌ Failed: {results['failed']}\n\n"
+            response_text += "💫 Please accept the friend request from the bot account"
+            
+            bot.reply_to(message, response_text)
+            
+        except IndexError:
+            bot.reply_to(message, f"📝 Usage: /add{bot_number} <uid>\nExample: /add{bot_number} 1234567890")
+        except Exception as e:
+            bot.reply_to(message, f"❌ Error: {str(e)}")
+    return handler
 
-@bot.message_handler(commands=['add2'])
-def handle_add2_command(message):
-    try:
-        uid = message.text.split()[1]
-        region = "IND"
-        token = generate_token(BOT2_UID, BOT2_PASSWORD)
-        if not token:
-            bot.reply_to(message, "❌ Failed to generate token for Bot 2")
-            return
-        
-        jwt_data = decode_jwt(token)
-        bot_name = jwt_data.get("nickname", "Unknown") if jwt_data else "Unknown"
-        
-        player_data = get_player_info_api(uid, region)
-        if player_data:
-            basic_info = player_data.get("data", {}).get("basicInfo", {})
-            player_name = basic_info.get("nickname", "Unknown")
-            player_uid = basic_info.get("accountId", 0)
-            player_level = basic_info.get("level", 0)
-        else:
-            encrypted_uid = enc(uid)
-            if not encrypted_uid:
-                bot.reply_to(message, "❌ UID encryption failed")
-                return
-            info = make_request(encrypted_uid, region, token)
-            if not info:
-                bot.reply_to(message, "❌ Failed to retrieve player info")
-                return
-            jsone = MessageToJson(info)
-            data_info = json.loads(jsone)
-            player_name = str(data_info.get('AccountInfo', {}).get('PlayerNickname', 'Unknown'))
-            player_uid = int(data_info.get('AccountInfo', {}).get('UID', 0))
-            player_level = int(data_info.get('AccountInfo', {}).get('Level', 0))
-        
-        results = {"success": 0, "failed": 0}
-        send_friend_request(uid, token, region, results)
-        
-        response_text = "🎯 *FRIEND REQUEST SENT* 🎯\n\n"
-        response_text += "🤖 *Bot Account (Account 2):*\n"
-        response_text += f"   └─ 🔖 {bot_name}\n\n"
-        response_text += "👤 *Target Player:*\n"
-        response_text += f"   ├─ 🆔 UID: `{player_uid}`\n"
-        response_text += f"   ├─ 🏷️ Name: {player_name}\n"
-        response_text += f"   └─ ⭐ Level: {player_level}\n\n"
-        response_text += "📊 *Request Results:*\n"
-        response_text += f"   ├─ ✅ Successful: {results['success']}\n"
-        response_text += f"   └─ ❌ Failed: {results['failed']}\n\n"
-        response_text += "💫 *Please accept the friend request from the bot account*"
-        
-        bot.reply_to(message, response_text, parse_mode='Markdown')
-        
-    except IndexError:
-        bot.reply_to(message, "📝 *Usage:* `/add2 <uid>`\nExample: `/add2 1234567890`", parse_mode='Markdown')
-    except Exception as e:
-        bot.reply_to(message, f"❌ *Error:* {str(e)}", parse_mode='Markdown')
+for bot_number in BOTS.keys():
+    command = f'add{bot_number}'
+    bot.message_handler(commands=[command])(handle_add_command_generator(bot_number))
 
 @bot.message_handler(commands=['help', 'start'])
 def handle_help_command(message):
-    help_text = "🤖 *FREE FIRE FRIEND REQUEST BOT* 🤖\n\n"
-    help_text += "📋 *Available Commands:*\n"
-    help_text += "   ├─ `/add <uid>` - Send friend request using Bot 1\n"
-    help_text += "   ├─ `/add2 <uid>` - Send friend request using Bot 2\n"
-    help_text += "   ├─ `/stats <uid>` - Get player statistics\n"
-    help_text += "   └─ `/help` - Show this help message\n\n"
-    help_text += "⚡ *Features:*\n"
+    help_text = "🤖 FREE FIRE FRIEND REQUEST BOT 🤖\n\n"
+    help_text += "📋 Available Commands:\n"
+    
+    for bot_num in BOTS.keys():
+        help_text += f"   ├─ /add{bot_num} <uid> - Send friend request using Bot {bot_num}\n"
+    
+    help_text += "   ├─ /stats <uid> - Get player statistics\n"
+    help_text += "   └─ /help - Show this help message\n\n"
+    help_text += "⚡ Features:\n"
     help_text += "   ├─ Multiple bot accounts\n"
     help_text += "   ├─ Player information lookup\n"
     help_text += "   └─ Automatic bot account management\n\n"
-    help_text += "🎮 *Version:* OB50"
-    bot.reply_to(message, help_text, parse_mode='Markdown')
+    help_text += "🎮 Version: OB50"
+    bot.reply_to(message, help_text)
 
 @bot.message_handler(commands=['stats'])
 def handle_stats_command(message):
@@ -419,7 +381,7 @@ def handle_stats_command(message):
             kda = basic_info.get("kda", 0)
             win_rate = basic_info.get("winRate", 0)
         else:
-            token = generate_token(BOT_UID, BOT_PASSWORD)
+            token = generate_token(BOTS["1"]["uid"], BOTS["1"]["password"])
             if not token:
                 bot.reply_to(message, "❌ Failed to generate token")
                 return
@@ -441,23 +403,23 @@ def handle_stats_command(message):
             kda = float(data_info.get('AccountInfo', {}).get('KDA', 0))
             win_rate = float(data_info.get('AccountInfo', {}).get('WinRate', 0))
         
-        stats_text = "📊 *PLAYER STATISTICS* 📊\n\n"
-        stats_text += f"👤 *Player:* {player_name}\n"
-        stats_text += f"🆔 *UID:* `{player_uid}`\n"
-        stats_text += f"⭐ *Level:* {player_level}\n\n"
-        stats_text += "🎮 *Game Stats:*\n"
+        stats_text = "📊 PLAYER STATISTICS 📊\n\n"
+        stats_text += f"👤 Player: {player_name}\n"
+        stats_text += f"🆔 UID: {player_uid}\n"
+        stats_text += f"⭐ Level: {player_level}\n\n"
+        stats_text += "🎮 Game Stats:\n"
         stats_text += f"   ├─ 🎯 Total Matches: {total_matches}\n"
         stats_text += f"   ├─ 🔫 Total Kills: {total_kills}\n"
         stats_text += f"   ├─ 📈 K/D/A: {kda:.2f}\n"
         stats_text += f"   └─ 🏆 Win Rate: {win_rate:.2f}%\n\n"
-        stats_text += "⚡ *Powered by TCP Bot System*"
+        stats_text += "⚡ Powered by TCP Bot System"
         
-        bot.reply_to(message, stats_text, parse_mode='Markdown')
+        bot.reply_to(message, stats_text)
         
     except IndexError:
-        bot.reply_to(message, "📝 *Usage:* `/stats <uid>`\nExample: `/stats 1234567890`", parse_mode='Markdown')
+        bot.reply_to(message, "📝 Usage: /stats <uid>\nExample: /stats 1234567890")
     except Exception as e:
-        bot.reply_to(message, f"❌ *Error:* {str(e)}", parse_mode='Markdown')
+        bot.reply_to(message, f"❌ Error: {str(e)}")
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
