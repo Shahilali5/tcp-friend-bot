@@ -16,7 +16,7 @@ bot = telebot.TeleBot("7819546201:AAFygncq5TTfcWyBXtJN3g1-HBRyXZHkfe8")
 bot.remove_webhook()
 bot.set_webhook(url="https://tcp-friend-bot.onrender.com/webhook")
 
-CURRENT_VERSION = "OB50"
+CURRENT_VERSION = "OB51"
 UNITY_VERSION = "2020.3.18f1"
 BOT_UID = "4226589058"
 BOT_PASSWORD = "164AE2612E87F3F68BC8A9972BD5ED448C0F9F57ECD73855E2EEDDBF5E1579F9"
