@@ -121,7 +121,7 @@ def send_friend_request(uid, token, region, results):
 
 def generate_token(uid, password):
     try:
-        url = f"https://jwt-api-woad.vercel.app/token?uid={uid}&password={password}&key=Shahil440"
+        url = f"https://jwt-noob-10.vercel.app/token?uid={uid}&password={password}&key=Shahil440"
         response = requests.get(url)
         data = response.json()
         return data.get("token")
