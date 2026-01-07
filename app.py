@@ -12,7 +12,7 @@ import telebot
 import jwt
 
 app = Flask(__name__)
-bot = telebot.TeleBot("7819546201:AAFkjArLxb_KizuD_st8Hp-xQlA4idrUvSc")
+bot = telebot.TeleBot("7819546201:AAFygncq5TTfcWyBXtJN3g1-HBRyXZHkfe8")
 bot.remove_webhook()
 bot.set_webhook(url="https://tcp-friend-bot.onrender.com/webhook")
 
@@ -121,27 +121,10 @@ def send_friend_request(uid, token, region, results):
 
 def generate_token(uid, password):
     try:
-        url = "https://100067.connect.garena.com/oauth/guest/token/grant"
-        headers = {
-            "Host": "100067.connect.garena.com",
-            "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 12; SM-G988B Build/SP1A.210812.016)",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "close"
-        }
-        data = {
-            "uid": uid,
-            "password": password,
-            "response_type": "token",
-            "client_type": "2",
-            "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
-            "client_id": "100067"
-        }
-        
-        response = requests.post(url, headers=headers, data=data, timeout=10, verify=False)
-        if response.status_code == 200:
-            return response.json().get("access_token")
-        return None
+        url = f"https://jwt-api-lemon.vercel.app/token?uid={uid}&password={password}&key=Shahil440"
+        response = requests.get(url, timeout=15)
+        data = response.json()
+        return data.get("token")
     except:
         return None
 
