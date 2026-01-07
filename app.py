@@ -12,14 +12,14 @@ import telebot
 import jwt
 
 app = Flask(__name__)
-bot = telebot.TeleBot("7819546201:AAFygncq5TTfcWyBXtJN3g1-HBRyXZHkfe8")
+bot = telebot.TeleBot("7819546201:AAFkjArLxb_KizuD_st8Hp-xQlA4idrUvSc")
 bot.remove_webhook()
 bot.set_webhook(url="https://tcp-friend-bot.onrender.com/webhook")
 
 CURRENT_VERSION = "OB51"
 UNITY_VERSION = "2020.3.18f1"
-BOT_UID = "4226589058"
-BOT_PASSWORD = "164AE2612E87F3F68BC8A9972BD5ED448C0F9F57ECD73855E2EEDDBF5E1579F9"
+BOT_UID = "4308027856"
+BOT_PASSWORD = "0CD73C642E9A88C8BF70D1CCC83B31C5AA467C7E8EAC62AF6E898314AF295E9B"
 BOT2_UID = "4256233296"
 BOT2_PASSWORD = "FDB9CF351FAC3A051B267FA7438E0C6DC13618FD88256D2A1BADFE5CD319B682"
 
@@ -121,10 +121,27 @@ def send_friend_request(uid, token, region, results):
 
 def generate_token(uid, password):
     try:
-        url = f"https://jwt-noob-10.vercel.app/token?uid={uid}&password={password}&key=Shahil440"
-        response = requests.get(url)
-        data = response.json()
-        return data.get("token")
+        url = "https://100067.connect.garena.com/oauth/guest/token/grant"
+        headers = {
+            "Host": "100067.connect.garena.com",
+            "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 12; SM-G988B Build/SP1A.210812.016)",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "close"
+        }
+        data = {
+            "uid": uid,
+            "password": password,
+            "response_type": "token",
+            "client_type": "2",
+            "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
+            "client_id": "100067"
+        }
+        
+        response = requests.post(url, headers=headers, data=data, timeout=10, verify=False)
+        if response.status_code == 200:
+            return response.json().get("access_token")
+        return None
     except:
         return None
 
