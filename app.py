@@ -12,7 +12,7 @@ import telebot
 import jwt
 
 app = Flask(__name__)
-bot = telebot.TeleBot("7819546201:AAFygncq5TTfcWyBXtJN3g1-HBRyXZHkfe8")
+bot = telebot.TeleBot("7819546201:AAFkjArLxb_KizuD_st8Hp-xQlA4idrUvSc")
 bot.remove_webhook()
 bot.set_webhook(url="https://tcp-friend-bot.onrender.com/webhook")
 
