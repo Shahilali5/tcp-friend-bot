@@ -154,7 +154,7 @@ def decode_jwt(token):
 
 def get_player_info_api(uid, region):
     try:
-        url = f"https://shahilxinfo.vercel.app/player-info?uid={uid}&region={region.lower()}"
+        url = f"https://info-oknt.vercel.app/player-info/?uid={uid}&region={region.lower()}"
         response = requests.get(url, timeout=10)
         return response.json()
     except:
